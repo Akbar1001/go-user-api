@@ -4,9 +4,10 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-
+	"go-user-api/internal/logger"
 	"go-user-api/internal/models"
 	"go-user-api/internal/repository"
+	"go.uber.org/zap"
 )
 
 type UserService struct {
@@ -82,12 +83,12 @@ func (s *UserService) ListUsers() ([]models.UserResponse, error) {
 
 func (s *UserService) CreateUser(
 	req models.CreateUserRequest,
-) error {
+) (*models.UserResponse, error) {
 
 	err := s.validator.Struct(req)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dob, err := time.Parse(
@@ -96,26 +97,44 @@ func (s *UserService) CreateUser(
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = s.repo.CreateUser(
+	user, err := s.repo.CreateUser(
 		req.Name,
 		dob,
 	)
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Log.Info(
+	"user created",
+	zap.Int32("id", user.ID),
+	zap.String("name", user.Name),
+	)
+
+	return &models.UserResponse{
+		ID:   user.ID,
+		Name: user.Name,
+		DOB:  user.Dob.Format("2006-01-02"),
+		Age:  CalculateAge(user.Dob),
+	}, nil
+
+
 }
+
 
 func (s *UserService) UpdateUser(
 	id int32,
 	req models.UpdateUserRequest,
-) error {
+) (*models.UserResponse, error) {
 
 	err := s.validator.Struct(req)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dob, err := time.Parse(
@@ -124,21 +143,36 @@ func (s *UserService) UpdateUser(
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = s.repo.UpdateUser(
+	user, err := s.repo.UpdateUser(
 		id,
 		req.Name,
 		dob,
 	)
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.UserResponse{
+		ID:   user.ID,
+		Name: user.Name,
+		DOB:  user.Dob.Format("2006-01-02"),
+		Age:  CalculateAge(user.Dob),
+	}, nil
 }
+
 
 func (s *UserService) DeleteUser(
 	id int32,
 ) error {
+
+	logger.Log.Info(
+	"user deleted",
+	zap.Int32("id", id),
+)
 
 	return s.repo.DeleteUser(id)
 }

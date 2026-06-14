@@ -1,31 +1,32 @@
 package config
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
 )
 
-func ConnectDB(cfg *Config) (*pgx.Conn, error) {
+func ConnectDB(cfg *Config) (*sql.DB, error) {
 
-	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		cfg.DBUser,
-		cfg.DBPassword,
+	connStr := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DBHost,
 		cfg.DBPort,
+		cfg.DBUser,
+		cfg.DBPassword,
 		cfg.DBName,
 	)
 
-	conn, err := pgx.Connect(
-		context.Background(),
-		connString,
-	)
+	db, err := sql.Open("postgres", connStr)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return conn, nil
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

@@ -33,7 +33,9 @@ func (h *UserHandler) CreateUser(
 			})
 	}
 
-	if err := h.service.CreateUser(req); err != nil {
+	user, err := h.service.CreateUser(req)
+
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			JSON(fiber.Map{
 				"error": err.Error(),
@@ -41,9 +43,7 @@ func (h *UserHandler) CreateUser(
 	}
 
 	return c.Status(fiber.StatusCreated).
-		JSON(fiber.Map{
-			"message": "User created successfully",
-		})
+	JSON(user)
 }
 
 func (h *UserHandler) GetUser(
@@ -140,10 +140,10 @@ func (h *UserHandler) UpdateUser(
 			})
 	}
 
-	err = h.service.UpdateUser(
-		int32(id),
-		req,
-	)
+	user, err := h.service.UpdateUser(
+	int32(id),
+	req,
+)
 
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
@@ -152,7 +152,5 @@ func (h *UserHandler) UpdateUser(
 			})
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "User updated successfully",
-	})
+	return c.JSON(user)
 }

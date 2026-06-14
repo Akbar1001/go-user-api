@@ -1,36 +1,71 @@
 package main
 
 import (
-	"context"
+	
 	"log"
 
 	"go-user-api/config"
 
+	sqlc "go-user-api/db/sqlc/generated"
+
+	"go-user-api/internal/handler"
+	"go-user-api/internal/repository"
+	"go-user-api/internal/routes"
+	"go-user-api/internal/service"
+	"go-user-api/internal/logger"
 	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
+
+	err := logger.InitLogger()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer logger.Log.Sync()
 
 	cfg := config.LoadConfig()
 
 	conn, err := config.ConnectDB(cfg)
 
 	if err != nil {
-		log.Fatal("Database connection failed:", err)
+		log.Fatal("database connection failed:", err)
 	}
 
-	defer conn.Close(context.Background())
+	defer conn.Close()
 
 	log.Println("Database Connected Successfully")
+
+	queries := sqlc.New(conn)
+
+	userRepo := repository.NewUserRepository(
+		queries,
+	)
+
+	userService := service.NewUserService(
+		userRepo,
+	)
+
+	userHandler := handler.NewUserHandler(
+		userService,
+	)
 
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"success": true,
-			"message": "User API Running",
-		})
+	return c.JSON(fiber.Map{
+		"message": "API Running",
 	})
+})
 
-	log.Fatal(app.Listen(":" + cfg.ServerPort))
+	routes.SetupUserRoutes(
+		app,
+		userHandler,
+	)
+
+	log.Fatal(
+		app.Listen(":" + cfg.ServerPort),
+	)
 }
