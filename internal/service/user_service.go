@@ -3,19 +3,24 @@ package service
 import (
 	"time"
 
+	"github.com/go-playground/validator/v10"
+
 	"go-user-api/internal/models"
 	"go-user-api/internal/repository"
 )
 
 type UserService struct {
-	repo *repository.UserRepository
+	repo      *repository.UserRepository
+	validator *validator.Validate
 }
 
 func NewUserService(
 	repo *repository.UserRepository,
 ) *UserService {
+
 	return &UserService{
-		repo: repo,
+		repo:      repo,
+		validator: validator.New(),
 	}
 }
 
@@ -73,4 +78,67 @@ func (s *UserService) ListUsers() ([]models.UserResponse, error) {
 	}
 
 	return response, nil
+}
+
+func (s *UserService) CreateUser(
+	req models.CreateUserRequest,
+) error {
+
+	err := s.validator.Struct(req)
+
+	if err != nil {
+		return err
+	}
+
+	dob, err := time.Parse(
+		"2006-01-02",
+		req.DOB,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.repo.CreateUser(
+		req.Name,
+		dob,
+	)
+
+	return err
+}
+
+func (s *UserService) UpdateUser(
+	id int32,
+	req models.UpdateUserRequest,
+) error {
+
+	err := s.validator.Struct(req)
+
+	if err != nil {
+		return err
+	}
+
+	dob, err := time.Parse(
+		"2006-01-02",
+		req.DOB,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.repo.UpdateUser(
+		id,
+		req.Name,
+		dob,
+	)
+
+	return err
+}
+
+func (s *UserService) DeleteUser(
+	id int32,
+) error {
+
+	return s.repo.DeleteUser(id)
 }
