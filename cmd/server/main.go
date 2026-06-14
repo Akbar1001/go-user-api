@@ -14,6 +14,7 @@ import (
 	"go-user-api/internal/service"
 	"go-user-api/internal/logger"
 	"github.com/gofiber/fiber/v2"
+	"go-user-api/internal/middleware"
 )
 
 func main() {
@@ -53,6 +54,9 @@ func main() {
 	)
 
 	app := fiber.New()
+
+	app.Use(middleware.RequestID())
+	app.Use(middleware.RequestLogger())
 
 	app.Get("/", func(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
